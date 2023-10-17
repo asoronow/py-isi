@@ -24,7 +24,7 @@ def live_preview(shutter_time=100, exposure=10):
         - exposure: Exposure time in milliseconds
     '''
     camera = pco.Camera()
-
+    print("Started preview with exposure {:.2f} ms".format(exposure))
     with camera as cam:
         # Set camera parameters
         while True:
