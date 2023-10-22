@@ -1,7 +1,8 @@
+import sys
 import pco
-import cv2
+import numpy as np
+from PyQt5 import QtGui, QtWidgets, QtCore
 
-# Start a live preview
 CONFIGURATION = {
     'exposure time': 10e-3,
     'delay time': 0,
@@ -15,35 +16,67 @@ CONFIGURATION = {
     'binning': (1, 1)
 }
 
-def live_preview(shutter_time=100, exposure=10):
-    '''
-    Generate a live preview of the camera by taking sequential images.
 
-    Args:
-        - shutter_time: Shutter time in milliseconds
-        - exposure: Exposure time in milliseconds
-    '''
-    camera = pco.Camera()
-    print("Started preview with exposure {:.2f} ms".format(exposure))
-    with camera as cam:
-        # Set camera parameters
-        while True:
-            cam.configuration = {
-                "exposure time": exposure * 1e-3,
-                "roi": (1, 1, 2048, 2048),
-            }
-            cam.record(mode="sequence")
-            image, meta = cam.image()
-            
-            # Resize image 720 x 1024
-            image = cv2.resize(image, (1024, 720))
-            cv2.imshow("Live Preview", image)
-            
-            if ord("q") == cv2.waitKey(shutter_time):
-                break
+class CameraThread(QtCore.QThread):
+    image_signal = QtCore.pyqtSignal(np.ndarray)
+
+    def run(self):
+        camera = pco.Camera()
+        with camera as cam:
+            while True:
+                cam.configuration = {
+                    "exposure time": 10 * 1e-3,
+                    "roi": (1, 1, 2048, 2048),
+                }
+                cam.record(mode="sequence")
+                image, meta = cam.image()
+
+                # Convert to 8-bit if the image is 16-bit
+                if image.dtype == np.uint16:
+                    image = (image / 256).astype(np.uint8)
+                    
+                # Emit the processed image
+                self.image_signal.emit(image)
+
+
+class CameraPreviewWindow(QtWidgets.QWidget):
+    def __init__(self):
+        super(CameraPreviewWindow, self).__init__()
+
+        # Set window title and initial size
+        self.setWindowTitle("PCO Camera Live Preview")
+        self.resize(1024, 720)
+
+        self.image_label = QtWidgets.QLabel(self)
+        self.image_label.setFixedSize(1024, 700)
+
+        self.start_button = QtWidgets.QPushButton("Start Preview", self)
+        self.start_button.clicked.connect(self.live_preview)
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(self.image_label)
+        layout.addWidget(self.start_button)
+        self.setLayout(layout)
+
+        self.camera_thread = CameraThread()
+        self.camera_thread.image_signal.connect(self.update_image)
+
+    def update_image(self, image):
+        q_image = QtGui.QImage(image.data, image.shape[1], image.shape[0], image.strides[0], QtGui.QImage.Format_Grayscale8)
+        pixmap = QtGui.QPixmap.fromImage(q_image).scaled(self.image_label.width(), self.image_label.height(), QtCore.Qt.KeepAspectRatio)
+        self.image_label.setPixmap(pixmap)
+
+    @QtCore.pyqtSlot()
+    def live_preview(self):
+        if not self.camera_thread.isRunning():
+            self.camera_thread.start()
+
 
 def main():
-    live_preview(exposure=20)
+    app = QtWidgets.QApplication(sys.argv)
+    window = CameraPreviewWindow()
+    window.show()
+    sys.exit(app.exec_())
 
 
 if __name__ == "__main__":
