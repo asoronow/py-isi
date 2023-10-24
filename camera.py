@@ -19,14 +19,10 @@ CONFIGURATION = {
 
 class CameraThread(QtCore.QThread):
     image_signal = QtCore.pyqtSignal(np.ndarray)
+
     def __init__(self, exposure_time=10e-3):
         super(CameraThread, self).__init__()
         self.exposure_time = exposure_time
-
-    def set_exposure_time(self, value):
-        # Assuming slider's value range is from 0 to 100
-        # converting that to a range of 1e-6 to 100e-3
-        self.exposure_time = value * 1e-3
 
     def run(self):
         camera = pco.Camera()
@@ -39,14 +35,22 @@ class CameraThread(QtCore.QThread):
                 cam.record(mode="sequence")
                 image, meta = cam.image()
 
+                # Convert to 8-bit if the image is 16-bit
                 if image.dtype == np.uint16:
                     image = (image / 256).astype(np.uint8)
+                    
+                # Emit the processed image
                 self.image_signal.emit(image)
+
+    def update_exposure(self, exposure_time):
+        self.exposure_time = exposure_time
+
 
 class CameraPreviewWindow(QtWidgets.QWidget):
     def __init__(self):
         super(CameraPreviewWindow, self).__init__()
 
+        # Set window title and initial size
         self.setWindowTitle("PCO Camera Live Preview")
         self.resize(1024, 720)
 
@@ -56,18 +60,21 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         self.start_button = QtWidgets.QPushButton("Start Preview", self)
         self.start_button.clicked.connect(self.live_preview)
 
-        self.exposure_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal, self)
-        self.exposure_slider.setRange(0, 100)  # Assuming a range from 0 to 100 for simplicity
-        self.exposure_slider.setValue(10)  # Default value
-        self.exposure_slider.valueChanged.connect(self.update_exposure_time)
+        self.spin_box = QtWidgets.QDoubleSpinBox(self)
+        self.spin_box.setRange(1e-3, 10000e-3)  # Adjust the range as needed
+        self.spin_box.setDecimals(4)
+        self.spin_box.setValue(10e-3)
+        self.spin_box.setSingleStep(0.01)  # Setting step size to 0.01
+        self.spin_box.valueChanged.connect(self.adjust_exposure)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.image_label)
-        layout.addWidget(self.exposure_slider)
+        layout.addWidget(self.spin_box)
         layout.addWidget(self.start_button)
         self.setLayout(layout)
 
         self.camera_thread = CameraThread()
+
         self.camera_thread.image_signal.connect(self.update_image)
 
     def update_image(self, image):
@@ -80,14 +87,17 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         if not self.camera_thread.isRunning():
             self.camera_thread.start()
 
-    def update_exposure_time(self, value):
-        self.camera_thread.set_exposure_time(value)
+    @QtCore.pyqtSlot(float)
+    def adjust_exposure(self, value):
+        self.camera_thread.update_exposure(value)
+
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
     window = CameraPreviewWindow()
     window.show()
     sys.exit(app.exec_())
+
 
 if __name__ == "__main__":
     main()
