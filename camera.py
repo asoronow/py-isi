@@ -43,7 +43,7 @@ class CameraThread(QtCore.QThread):
                 self.image_signal.emit(image)
 
     def update_exposure(self, exposure_time):
-        self.exposure_time = exposure_time
+        self.exposure_time = float(exposure_time * 1e-3)
 
 
 class CameraPreviewWindow(QtWidgets.QWidget):
@@ -61,10 +61,10 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         self.start_button.clicked.connect(self.live_preview)
 
         self.spin_box = QtWidgets.QDoubleSpinBox(self)
-        self.spin_box.setRange(1e-3, 10000e-3)  # Adjust the range as needed
-        self.spin_box.setDecimals(4)
-        self.spin_box.setValue(10e-3)
-        self.spin_box.setSingleStep(0.01)  # Setting step size to 0.01
+        self.spin_box.setRange(1, 10000)  # Adjust the range as needed
+        self.spin_box.setDecimals(0)
+        self.spin_box.setValue(10)
+        self.spin_box.setSingleStep(1)  # Setting step size to 0.01
         self.spin_box.valueChanged.connect(self.adjust_exposure)
 
         layout = QtWidgets.QVBoxLayout()
