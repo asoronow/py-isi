@@ -110,7 +110,6 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         self.setLayout(layout)
 
         self.camera_thread = CameraThread()
-
         self.camera_thread.image_signal.connect(self.update_image)
 
     def legalize_roi(self, roi, camera_type='panda 4.2', current_roi=None, verbose=True):
