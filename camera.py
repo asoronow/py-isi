@@ -92,10 +92,18 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         self.bottom_spin_box.setValue(2048)
         self.bottom_spin_box.valueChanged.connect(self.adjust_roi)
 
+
+        # Title for the ROI spin boxes
+        roi_title_label = QtWidgets.QLabel("Adjust ROI Values", self)
+        roi_title_label.setStyleSheet("font-weight: bold; font-size: 16px;")  # optional styling for the title
+
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.image_label)
         layout.addWidget(self.spin_box)
-
+        
+        # Add the title label to your layout
+        layout.addWidget(roi_title_label)
+        
         # Add the spin boxes to your layout
         layout.addWidget(QtWidgets.QLabel("Left ROI"))
         layout.addWidget(self.left_spin_box)
