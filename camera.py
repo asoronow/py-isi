@@ -95,27 +95,28 @@ class CameraPreviewWindow(QtWidgets.QWidget):
 
         # Title for the ROI spin boxes
         roi_title_label = QtWidgets.QLabel("Adjust ROI Values", self)
-        roi_title_label.setStyleSheet("font-weight: bold; font-size: 16px;")  # optional styling for the title
+        roi_title_label.setStyleSheet("font-weight: bold; font-size: 16px;")
 
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(self.image_label)
-        layout.addWidget(self.spin_box)
-        
-        # Add the title label to your layout
-        layout.addWidget(roi_title_label)
-        
-        # Add the spin boxes to your layout
-        layout.addWidget(QtWidgets.QLabel("Left ROI"))
-        layout.addWidget(self.left_spin_box)
-        layout.addWidget(QtWidgets.QLabel("Top ROI"))
-        layout.addWidget(self.top_spin_box)
-        layout.addWidget(QtWidgets.QLabel("Right ROI"))
-        layout.addWidget(self.right_spin_box)
-        layout.addWidget(QtWidgets.QLabel("Bottom ROI"))
-        layout.addWidget(self.bottom_spin_box)
+        # Right-side layout for controls
+        control_layout = QtWidgets.QVBoxLayout()
+        control_layout.addWidget(self.spin_box)
+        control_layout.addWidget(self.start_button)
+        control_layout.addWidget(roi_title_label)
+        control_layout.addWidget(QtWidgets.QLabel("Left ROI"))
+        control_layout.addWidget(self.left_spin_box)
+        control_layout.addWidget(QtWidgets.QLabel("Top ROI"))
+        control_layout.addWidget(self.top_spin_box)
+        control_layout.addWidget(QtWidgets.QLabel("Right ROI"))
+        control_layout.addWidget(self.right_spin_box)
+        control_layout.addWidget(QtWidgets.QLabel("Bottom ROI"))
+        control_layout.addWidget(self.bottom_spin_box)
 
-        layout.addWidget(self.start_button)
-        self.setLayout(layout)
+        # Main layout
+        main_layout = QtWidgets.QHBoxLayout()
+        main_layout.addWidget(self.image_label)
+        main_layout.addLayout(control_layout)
+
+        self.setLayout(main_layout)
 
         self.camera_thread = CameraThread()
         self.camera_thread.image_signal.connect(self.update_image)
