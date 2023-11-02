@@ -92,24 +92,51 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         self.bottom_spin_box.setValue(2048)
         self.bottom_spin_box.valueChanged.connect(self.adjust_roi)
 
+        #ROI Layouts
+        left_roi_layout = QtWidgets.QHBoxLayout()
+        left_roi_layout.addWidget(QtWidgets.QLabel("Left ROI"))
+        left_roi_layout.addWidget(self.left_spin_box)
+        left_roi_layout.addStretch()  # Pushes the contents to the left
+
+        top_roi_layout = QtWidgets.QHBoxLayout()
+        top_roi_layout.addWidget(QtWidgets.QLabel("Top ROI"))
+        top_roi_layout.addWidget(self.top_spin_box)
+        top_roi_layout.addStretch()
+
+        right_roi_layout = QtWidgets.QHBoxLayout()
+        right_roi_layout.addWidget(QtWidgets.QLabel("Right ROI"))
+        right_roi_layout.addWidget(self.right_spin_box)
+        right_roi_layout.addStretch()
+
+        bottom_roi_layout = QtWidgets.QHBoxLayout()
+        bottom_roi_layout.addWidget(QtWidgets.QLabel("Bottom ROI"))
+        bottom_roi_layout.addWidget(self.bottom_spin_box)
+        bottom_roi_layout.addStretch()
+
+        # Right-side layout for controls
+        control_layout = QtWidgets.QVBoxLayout()
+        
+        # Title for the exposure Time spin box(self.spin_box)
+        exposure_label = QtWidgets.QLabel("Exposure Time", self)
+        exposure_label.setStyleSheet("font-weight: bold; font-size: 16px;")
+        control_layout.addWidget(exposure_label)
+        control_layout.addWidget(self.spin_box)
+        control_layout.addSpacing(10)  # Add 10px of vertical space
+
+        # Start Preview Button
+        control_layout.addWidget(self.start_button)
+        control_layout.addSpacing(10)  # Add 10px of vertical space
 
         # Title for the ROI spin boxes
         roi_title_label = QtWidgets.QLabel("Adjust ROI Values", self)
         roi_title_label.setStyleSheet("font-weight: bold; font-size: 16px;")
-
-        # Right-side layout for controls
-        control_layout = QtWidgets.QVBoxLayout()
-        control_layout.addWidget(self.spin_box)
-        control_layout.addWidget(self.start_button)
         control_layout.addWidget(roi_title_label)
-        control_layout.addWidget(QtWidgets.QLabel("Left ROI"))
-        control_layout.addWidget(self.left_spin_box)
-        control_layout.addWidget(QtWidgets.QLabel("Top ROI"))
-        control_layout.addWidget(self.top_spin_box)
-        control_layout.addWidget(QtWidgets.QLabel("Right ROI"))
-        control_layout.addWidget(self.right_spin_box)
-        control_layout.addWidget(QtWidgets.QLabel("Bottom ROI"))
-        control_layout.addWidget(self.bottom_spin_box)
+
+        # Adding the grouped ROI layouts
+        control_layout.addLayout(left_roi_layout)
+        control_layout.addLayout(top_roi_layout)
+        control_layout.addLayout(right_roi_layout)
+        control_layout.addLayout(bottom_roi_layout)
 
         # Main layout
         main_layout = QtWidgets.QHBoxLayout()
