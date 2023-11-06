@@ -2,7 +2,7 @@ import sys
 import pco
 import numpy as np
 from PyQt5 import QtGui, QtWidgets, QtCore
-
+from pathlib import Path
 CONFIGURATION = {
     'exposure time': 10e-3,
     'delay time': 0,
@@ -16,13 +16,13 @@ CONFIGURATION = {
     'binning': (1, 1)
 }
 
-
 class CameraThread(QtCore.QThread):
     image_signal = QtCore.pyqtSignal(np.ndarray)
 
-    def __init__(self, exposure_time=10e-3):
+    def __init__(self, exposure_time=10e-3, delay_time=0):
         super(CameraThread, self).__init__()
         self.exposure_time = exposure_time
+        self.delay_time = delay_time  # Initialize delay_time
         self.roi = (1, 1, 2048, 2048)  # default ROI value
 
     def run(self):
@@ -31,6 +31,7 @@ class CameraThread(QtCore.QThread):
             while True:
                 cam.configuration = {
                     "exposure time": self.exposure_time,
+                    "delay time": self.delay_time,  # Use the updated delay time value
                     "roi": self.roi,  # Use the updated ROI value
                 }
                 cam.record(mode="sequence")
@@ -49,7 +50,6 @@ class CameraThread(QtCore.QThread):
     def adjust_roi(self, roi):
         self.roi = roi
 
-
 class CameraPreviewWindow(QtWidgets.QWidget):
     def __init__(self):
         super(CameraPreviewWindow, self).__init__()
@@ -64,12 +64,21 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         self.start_button = QtWidgets.QPushButton("Start Preview", self)
         self.start_button.clicked.connect(self.live_preview)
 
+        # Spin box for Exposure Time
         self.spin_box = QtWidgets.QDoubleSpinBox(self)
         self.spin_box.setRange(1, 10000)  # Adjust the range as needed
         self.spin_box.setDecimals(0)
         self.spin_box.setValue(10)
         self.spin_box.setSingleStep(1)  # Setting step size to 1
         self.spin_box.valueChanged.connect(self.adjust_exposure)
+
+        # Spin box for Delay Time adjustments
+        self.delay_spin_box = QtWidgets.QDoubleSpinBox(self)
+        self.delay_spin_box.setRange(0, 1000)  # Adjust the range as needed
+        self.delay_spin_box.setDecimals(1) 
+        self.delay_spin_box.setValue(0.0)  # Initial value
+        self.delay_spin_box.setSingleStep(0.5)  # Setting step size to 0.5
+        self.delay_spin_box.valueChanged.connect(self.adjust_delay)
 
         # Spin boxes for ROI adjustments
         self.left_spin_box = QtWidgets.QSpinBox(self)
@@ -115,6 +124,10 @@ class CameraPreviewWindow(QtWidgets.QWidget):
 
         # Right-side layout for controls
         control_layout = QtWidgets.QVBoxLayout()
+
+        # Start Preview Button
+        control_layout.addWidget(self.start_button)
+        control_layout.addSpacing(10)  # Add 10px of vertical space
         
         # Title for the exposure Time spin box(self.spin_box)
         exposure_label = QtWidgets.QLabel("Exposure Time", self)
@@ -123,8 +136,11 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         control_layout.addWidget(self.spin_box)
         control_layout.addSpacing(10)  # Add 10px of vertical space
 
-        # Start Preview Button
-        control_layout.addWidget(self.start_button)
+        # Title and spin box for Delay Time
+        delay_label = QtWidgets.QLabel("Delay Time", self)
+        delay_label.setStyleSheet("font-weight: bold; font-size: 16px;")
+        control_layout.addWidget(delay_label)
+        control_layout.addWidget(self.delay_spin_box)
         control_layout.addSpacing(10)  # Add 10px of vertical space
 
         # Title for the ROI spin boxes
@@ -238,6 +254,12 @@ class CameraPreviewWindow(QtWidgets.QWidget):
     def adjust_exposure(self, value):
         self.camera_thread.update_exposure(value)
 
+    @QtCore.pyqtSlot(float)
+    def adjust_delay(self, value):
+        delay_time = value  # No need to call self.delay_spin_box.value() since value is passed as an argument
+        # Now you can use the delay_time value for your camera or any other operation
+        # e.g., set it to your camera's configuration or use it in a QTimer, etc.
+
     @QtCore.pyqtSlot(int)
     def adjust_roi(self, _):
         left_value = self.left_spin_box.value()
@@ -257,13 +279,11 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         # Update the ROI in your camera_thread
         self.camera_thread.adjust_roi(roi_tuple)
 
-
 def main():
     app = QtWidgets.QApplication(sys.argv)
     window = CameraPreviewWindow()
     window.show()
     sys.exit(app.exec_())
-
 
 if __name__ == "__main__":
     main()
