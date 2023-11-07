@@ -22,13 +22,15 @@ class CameraThread(QtCore.QThread):
     def __init__(self, exposure_time=10e-3, delay_time=0):
         super(CameraThread, self).__init__()
         self.exposure_time = exposure_time
-        self.delay_time = delay_time  # Initialize delay_time
-        self.roi = (1, 1, 2048, 2048)  # default ROI value
+        self.delay_time = delay_time
+        self.roi = (1, 1, 2048, 2048)
+        self.running = False  # Flag to control the running of the thread
 
     def run(self):
+        self.running = True
         camera = pco.Camera()
         with camera as cam:
-            while True:
+            while self.running:
                 cam.configuration = {
                     "exposure time": self.exposure_time,
                     "delay time": self.delay_time,  # Use the updated delay time value
@@ -40,9 +42,14 @@ class CameraThread(QtCore.QThread):
                 # Convert to 8-bit if the image is 16-bit
                 if image.dtype == np.uint16:
                     image = (image / 256).astype(np.uint8)
+
+                if not self.running:
+                    break  # Break the loop if running is set to False
                     
                 # Emit the processed image
                 self.image_signal.emit(image)
+    def stop(self):
+        self.running = False  # Set the flag to False to stop the loop
 
     def update_exposure(self, exposure_time):
         self.exposure_time = float(exposure_time * 1e-3)
@@ -61,8 +68,13 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         self.image_label = QtWidgets.QLabel(self)
         self.image_label.setFixedSize(1024, 700)
 
+        # Start Preview Button
         self.start_button = QtWidgets.QPushButton("Start Preview", self)
         self.start_button.clicked.connect(self.live_preview)
+
+        # Stop Preview Button
+        self.stop_button = QtWidgets.QPushButton("Stop Preview", self)
+        self.stop_button.clicked.connect(self.stop_preview)
 
         # Spin box for Exposure Time
         self.spin_box = QtWidgets.QDoubleSpinBox(self)
@@ -125,8 +137,12 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         # Right-side layout for controls
         control_layout = QtWidgets.QVBoxLayout()
 
-        # Start Preview Button
+        # Add the start button to the layout
         control_layout.addWidget(self.start_button)
+        control_layout.addSpacing(10)  # Add 10px of vertical space
+
+        # Add the stop button to the layout
+        control_layout.addWidget(self.stop_button)
         control_layout.addSpacing(10)  # Add 10px of vertical space
         
         # Title for the exposure Time spin box(self.spin_box)
@@ -160,7 +176,6 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         main_layout.addLayout(control_layout)
 
         self.setLayout(main_layout)
-
         self.camera_thread = CameraThread()
         self.camera_thread.image_signal.connect(self.update_image)
 
@@ -249,6 +264,18 @@ class CameraPreviewWindow(QtWidgets.QWidget):
     def live_preview(self):
         if not self.camera_thread.isRunning():
             self.camera_thread.start()
+        else:
+            print("Camera thread is already running.")
+
+    @QtCore.pyqtSlot()
+    def stop_preview(self):
+        if self.camera_thread.isRunning():
+            self.camera_thread.stop()  # Stop the camera thread
+            self.camera_thread.wait()  # Wait for the thread to fully stop
+            self.image_label.clear()   # Clear the image label
+            print("Camera thread stopped.")
+        else:
+            print("Camera thread is not running.")
 
     @QtCore.pyqtSlot(float)
     def adjust_exposure(self, value):
