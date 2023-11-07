@@ -84,14 +84,6 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         self.spin_box.setSingleStep(1)  # Setting step size to 1
         self.spin_box.valueChanged.connect(self.adjust_exposure)
 
-        # Spin box for Delay Time adjustments
-        self.delay_spin_box = QtWidgets.QDoubleSpinBox(self)
-        self.delay_spin_box.setRange(0, 1000)  # Adjust the range as needed
-        self.delay_spin_box.setDecimals(1) 
-        self.delay_spin_box.setValue(0.0)  # Initial value
-        self.delay_spin_box.setSingleStep(0.5)  # Setting step size to 0.5
-        self.delay_spin_box.valueChanged.connect(self.adjust_delay)
-
         # Spin boxes for ROI adjustments
         self.left_spin_box = QtWidgets.QSpinBox(self)
         self.left_spin_box.setRange(1, 2048)
@@ -113,63 +105,76 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         self.bottom_spin_box.setValue(2048)
         self.bottom_spin_box.valueChanged.connect(self.adjust_roi)
 
-        #ROI Layouts
+        # Spin box for Delay Time adjustments
+        self.delay_spin_box = QtWidgets.QDoubleSpinBox(self)
+        self.delay_spin_box.setRange(0, 1000)  # Adjust the range as needed
+        self.delay_spin_box.setDecimals(1) 
+        self.delay_spin_box.setValue(0.0)  # Initial value
+        self.delay_spin_box.setSingleStep(0.5)  # Setting step size to 0.5
+        self.delay_spin_box.valueChanged.connect(self.adjust_delay)
+
+        # Set the font to bold for the ROI labels
+        bold_font = QtGui.QFont()
+        bold_font.setBold(True)
+
+        # Horizontal layouts for each ROI spin box with bold labels
+        left_roi_label = QtWidgets.QLabel("Left ROI:")
+        left_roi_label.setFont(bold_font)
         left_roi_layout = QtWidgets.QHBoxLayout()
-        left_roi_layout.addWidget(QtWidgets.QLabel("Left ROI"))
+        left_roi_layout.addWidget(left_roi_label)
         left_roi_layout.addWidget(self.left_spin_box)
-        left_roi_layout.addStretch()  # Pushes the contents to the left
 
+        top_roi_label = QtWidgets.QLabel("Top ROI:")
+        top_roi_label.setFont(bold_font)
         top_roi_layout = QtWidgets.QHBoxLayout()
-        top_roi_layout.addWidget(QtWidgets.QLabel("Top ROI"))
+        top_roi_layout.addWidget(top_roi_label)
         top_roi_layout.addWidget(self.top_spin_box)
-        top_roi_layout.addStretch()
 
+        right_roi_label = QtWidgets.QLabel("Right ROI:")
+        right_roi_label.setFont(bold_font)
         right_roi_layout = QtWidgets.QHBoxLayout()
-        right_roi_layout.addWidget(QtWidgets.QLabel("Right ROI"))
+        right_roi_layout.addWidget(right_roi_label)
         right_roi_layout.addWidget(self.right_spin_box)
-        right_roi_layout.addStretch()
 
+        bottom_roi_label = QtWidgets.QLabel("Bottom ROI:")
+        bottom_roi_label.setFont(bold_font)
         bottom_roi_layout = QtWidgets.QHBoxLayout()
-        bottom_roi_layout.addWidget(QtWidgets.QLabel("Bottom ROI"))
+        bottom_roi_layout.addWidget(bottom_roi_label)
         bottom_roi_layout.addWidget(self.bottom_spin_box)
-        bottom_roi_layout.addStretch()
 
         # Right-side layout for controls
         control_layout = QtWidgets.QVBoxLayout()
 
         # Add the start button to the layout
         control_layout.addWidget(self.start_button)
-        control_layout.addSpacing(10)  # Add 10px of vertical space
-
+    
         # Add the stop button to the layout
         control_layout.addWidget(self.stop_button)
-        control_layout.addSpacing(10)  # Add 10px of vertical space
-        
-        # Title for the exposure Time spin box(self.spin_box)
-        exposure_label = QtWidgets.QLabel("Exposure Time", self)
-        exposure_label.setStyleSheet("font-weight: bold; font-size: 16px;")
-        control_layout.addWidget(exposure_label)
-        control_layout.addWidget(self.spin_box)
-        control_layout.addSpacing(10)  # Add 10px of vertical space
 
-        # Title and spin box for Delay Time
-        delay_label = QtWidgets.QLabel("Delay Time", self)
-        delay_label.setStyleSheet("font-weight: bold; font-size: 16px;")
-        control_layout.addWidget(delay_label)
-        control_layout.addWidget(self.delay_spin_box)
-        control_layout.addSpacing(10)  # Add 10px of vertical space
+        # Horizontal layout for Exposure Time
+        exposure_time_layout = QtWidgets.QHBoxLayout()
+        exposure_label = QtWidgets.QLabel("Exposure Time:")
+        exposure_label.setFont(bold_font)  # Set the font to bold if you want
+        exposure_time_layout.addWidget(exposure_label)
+        exposure_time_layout.addWidget(self.spin_box)
+        # Adding the Exposure Time layout to the control layout
+        control_layout.addLayout(exposure_time_layout)
 
-        # Title for the ROI spin boxes
-        roi_title_label = QtWidgets.QLabel("Adjust ROI Values", self)
-        roi_title_label.setStyleSheet("font-weight: bold; font-size: 16px;")
-        control_layout.addWidget(roi_title_label)
-
-        # Adding the grouped ROI layouts
+        # Add the ROI layouts to the control layout
         control_layout.addLayout(left_roi_layout)
         control_layout.addLayout(top_roi_layout)
         control_layout.addLayout(right_roi_layout)
         control_layout.addLayout(bottom_roi_layout)
 
+        # Horizontal layout for Delay Time
+        delay_time_layout = QtWidgets.QHBoxLayout()
+        delay_label = QtWidgets.QLabel("Delay Time")
+        delay_label.setFont(bold_font)  # Optional: Set the font to bold if desired
+        delay_time_layout.addWidget(delay_label)
+        delay_time_layout.addWidget(self.delay_spin_box)
+        # Add the Delay Time layout to the control layout
+        control_layout.addLayout(delay_time_layout)
+        
         # Main layout
         main_layout = QtWidgets.QHBoxLayout()
         main_layout.addWidget(self.image_label)
