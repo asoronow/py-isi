@@ -77,6 +77,10 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         self.stop_button = QtWidgets.QPushButton("Stop Preview", self)
         self.stop_button.clicked.connect(self.stop_preview)
 
+        # Single Capture Button
+        self.single_capture_button = QtWidgets.QPushButton("Single Capture", self)
+        self.single_capture_button.clicked.connect(self.single_capture)
+
         # Spin box for Exposure Time
         self.spin_box = QtWidgets.QDoubleSpinBox(self)
         self.spin_box.setRange(1, 10000)  # Adjust the range as needed
@@ -146,12 +150,14 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         # Right-side layout for controls
         control_layout = QtWidgets.QVBoxLayout()
         
-
         # Add the start button to the layout
         control_layout.addWidget(self.start_button)
     
         # Add the stop button to the layout
         control_layout.addWidget(self.stop_button)
+
+        # Add the Single Capture button to the layout
+        control_layout.addWidget(self.single_capture_button)
 
         # Horizontal layout for Exposure Time
         exposure_time_layout = QtWidgets.QHBoxLayout()
@@ -180,9 +186,6 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         #Main layout
         main_layout = QtWidgets.QHBoxLayout()
         main_layout.addWidget(self.image_label)
-        #Adjust the margins and spacing of the main layout to reduce extra space
-        #main_layout.setContentsMargins(0, 0, 0, 0)  # Set all margins to 0
-        #main_layout.setSpacing(0)  # Set the spacing to 0
         main_layout.addLayout(control_layout)
 
         self.setLayout(main_layout)
@@ -286,6 +289,16 @@ class CameraPreviewWindow(QtWidgets.QWidget):
             print("Camera thread stopped.")
         else:
             print("Camera thread is not running.")
+
+    def single_capture(self):
+        pixmap = self.image_label.pixmap()
+        if pixmap and not pixmap.isNull():
+            # Specify the file format and file name for saving the image
+            file_name = "/Users/Yesenia/Desktop/Pics/captured_image.png"
+            pixmap.save(file_name, 'PNG')
+            print(f"Image saved as {file_name}")
+        else:
+            print("No image available for capture")
 
     @QtCore.pyqtSlot(float)
     def adjust_exposure(self, value):
