@@ -67,6 +67,7 @@ class CameraPreviewWindow(QtWidgets.QWidget):
 
         self.image_label = QtWidgets.QLabel(self)
         self.image_label.setFixedSize(1024, 700)
+        self.image_label.setAlignment(QtCore.Qt.AlignCenter)  # Center the image in QLabel
 
         # Start Preview Button
         self.start_button = QtWidgets.QPushButton("Start Preview", self)
@@ -144,6 +145,7 @@ class CameraPreviewWindow(QtWidgets.QWidget):
 
         # Right-side layout for controls
         control_layout = QtWidgets.QVBoxLayout()
+        
 
         # Add the start button to the layout
         control_layout.addWidget(self.start_button)
@@ -174,10 +176,13 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         delay_time_layout.addWidget(self.delay_spin_box)
         # Add the Delay Time layout to the control layout
         control_layout.addLayout(delay_time_layout)
-        
-        # Main layout
+
+        #Main layout
         main_layout = QtWidgets.QHBoxLayout()
         main_layout.addWidget(self.image_label)
+        #Adjust the margins and spacing of the main layout to reduce extra space
+        #main_layout.setContentsMargins(0, 0, 0, 0)  # Set all margins to 0
+        #main_layout.setSpacing(0)  # Set the spacing to 0
         main_layout.addLayout(control_layout)
 
         self.setLayout(main_layout)
