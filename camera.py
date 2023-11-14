@@ -4,6 +4,7 @@ import numpy as np
 from PyQt5 import QtGui, QtWidgets, QtCore
 from PyQt5.QtWidgets import QFileDialog
 from pathlib import Path
+from datetime import datetime
 import os
 CONFIGURATION = {
     'exposure time': 10e-3,
@@ -62,6 +63,8 @@ class CameraThread(QtCore.QThread):
 class CameraPreviewWindow(QtWidgets.QWidget):
     def __init__(self):
         super(CameraPreviewWindow, self).__init__()
+
+        self.save_location = None  # Initialize the save location
 
         # Set window title and initial size
         self.setWindowTitle("PCO Camera Live Preview")
@@ -287,18 +290,25 @@ class CameraPreviewWindow(QtWidgets.QWidget):
     @QtCore.pyqtSlot()
     def live_preview(self):
         if not self.camera_thread.isRunning():
-            self.camera_thread.start()
-            # Disable the start button as the preview has started
-            self.start_button.setEnabled(False)
-            # Optionally enable the stop button here if it's meant to be used to stop the preview
-            self.stop_button.setEnabled(True)
+            # Prompt the user to select a save location when the preview starts
+            self.save_location = QFileDialog.getExistingDirectory(self, "Select Save Location", str(Path.home()))
+            # Check if a directory was selected
+            if self.save_location:
+                self.camera_thread.start()
+                # Disable the start button as the preview has started
+                self.start_button.setEnabled(False)
+                # Optionally enable the stop button here if it's meant to be used to stop the preview
+                self.stop_button.setEnabled(True)
+            else:
+                print("No save location was selected. The live preview will not start.")
         else:
-            # Optionally, provide user feedback that the preview is already running
+             # Optionally, provide user feedback that the preview is already running
             print("Camera thread is already running.")
             # Since the preview is already running, ensure the start button is disabled
             self.start_button.setEnabled(False)
             # Ensure the stop button is enabled so the user can stop the preview
             self.stop_button.setEnabled(True)
+
 
     @QtCore.pyqtSlot()
     def stop_preview(self):
@@ -321,40 +331,30 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         print("Single capture method called")
 
         try:
-            # Use grab() to capture the QLabel content
             pixmap = self.image_label.grab()
         
-            if not pixmap.isNull():
+            if not pixmap.isNull() and self.save_location:
                 print("Pixmap is valid")
 
-                # Open a save file dialog at the user's home directory
-                home_dir = str(Path.home())
-                file_path, _ = QFileDialog.getSaveFileName(self, "Save Image",
-                                                       home_dir, "Images (*.png *.jpg *.jpeg)")
+                # Get the current date and time for the timestamp
+                now = datetime.now()
+                timestamp = now.strftime("%Y%m%d_%H%M%S")
 
-                if file_path:
-                    # Convert the string file path to a Path object
-                    file_path = Path(file_path)
+                # Create the full file path with the timestamp
+                file_name = f"Image_{timestamp}.png"
+                file_path = Path(self.save_location) / file_name
 
-                    # Confirm the file path
-                    print(f"File path chosen: {file_path}")
-
-                    # Determine the output format based on the file extension
-                    output_format = 'PNG' if file_path.suffix.lower() == '.png' else 'JPEG'
-
-                    # Attempt to save the image, converting Path object to string
-                    success = pixmap.save(str(file_path), output_format)
-                    if success:
-                        print(f"Image successfully saved as {file_path}")
-                    else:
-                        print("Failed to save the image.")
+                # Attempt to save the image
+                success = pixmap.save(str(file_path), 'PNG')
+                if success:
+                    print(f"Image successfully saved as {file_path}")
                 else:
-                    print("File save operation was canceled.")
+                    print("Failed to save the image.")
             else:
-                print("No image available for capture or QPixmap is invalid")
+                print("No image available for capture, or no save location set.")
         except Exception as e:
             print(f"An error occurred: {e}")
-    
+
     def start_recording(self):
         """
         Starts recording video from the camera.
