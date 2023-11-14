@@ -2,6 +2,7 @@ import sys
 import pco
 import numpy as np
 from PyQt5 import QtGui, QtWidgets, QtCore
+from PyQt5.QtWidgets import QFileDialog
 from pathlib import Path
 CONFIGURATION = {
     'exposure time': 10e-3,
@@ -290,15 +291,60 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         else:
             print("Camera thread is not running.")
 
+    # def single_capture(self):
+    #     print("Single capture method called")  # Diagnostic print
+
+    #     try:
+    #         pixmap = self.image_label.pixmap()
+    #         if pixmap and not pixmap.isNull():
+    #             print("Pixmap is valid")  # Diagnostic print
+
+    #             # Hard-coded path for testing
+    #             file_path = Path("C:/Users/Yesenia/Desktop/Pics/test_image.jpg")
+    #             print(f"Attempting to save image at: {file_path}")
+
+    #             success = pixmap.save(str(file_path), 'JPG')
+    #             if success:
+    #                 print(f"Image successfully saved as {file_path}")
+    #             else:
+    #                 print("Failed to save the image.")
+    #         else:
+    #             print("No image available for capture or QPixmap is invalid")
+    #     except Exception as e:
+    #         print(f"An error occurred: {e}")
+
     def single_capture(self):
-        pixmap = self.image_label.pixmap()
-        if pixmap and not pixmap.isNull():
-            # Specify the file format and file name for saving the image
-            file_name = "/Users/Yesenia/Desktop/Pics/captured_image.png"
-            pixmap.save(file_name, 'PNG')
-            print(f"Image saved as {file_name}")
-        else:
-            print("No image available for capture")
+        print("Single capture method called")
+        try:
+            # Use grab() to capture the QLabel content
+            pixmap = self.image_label.grab()
+        
+            if not pixmap.isNull():
+                print("Pixmap is valid")
+
+                # Open a save file dialog
+                file_path, _ = QFileDialog.getSaveFileName(self, "Save Image",
+                                                       "", "Images (*.png *.jpg *.jpeg)")
+                if file_path:
+                    # Confirm the file path
+                    print(f"File path chosen: {file_path}")
+
+                    # Determine the output format based on the file extension
+                    output_format = 'PNG' if file_path.lower().endswith('.png') else 'JPEG'
+                    jpg_quality = 95  # Adjust this as necessary
+
+                    # Attempt to save the image
+                    success = pixmap.save(file_path, output_format)
+                    if success:
+                        print(f"Image successfully saved as {file_path}")
+                    else:
+                        print("Failed to save the image.")
+                else:
+                    print("File save operation was canceled.")
+            else:
+                print("No image available for capture.")
+        except Exception as e:
+            print(f"An error occurred: {e}")
 
     @QtCore.pyqtSlot(float)
     def adjust_exposure(self, value):
