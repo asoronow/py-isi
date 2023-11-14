@@ -78,10 +78,16 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         # Stop Preview Button
         self.stop_button = QtWidgets.QPushButton("Stop Preview", self)
         self.stop_button.clicked.connect(self.stop_preview)
+        # Initially disable the stop button as there is no preview to stop
+        self.stop_button.setEnabled(False)
 
         # Single Capture Button
         self.single_capture_button = QtWidgets.QPushButton("Single Capture", self)
         self.single_capture_button.clicked.connect(self.single_capture)
+
+        # Record Button
+        self.record_button = QtWidgets.QPushButton("Record", self)
+        self.record_button.clicked.connect(self.start_recording)
 
         # Spin box for Exposure Time
         self.spin_box = QtWidgets.QDoubleSpinBox(self)
@@ -160,6 +166,9 @@ class CameraPreviewWindow(QtWidgets.QWidget):
 
         # Add the Single Capture button to the layout
         control_layout.addWidget(self.single_capture_button)
+
+        # Add the Record button to the layout
+        control_layout.addWidget(self.record_button)
 
         # Horizontal layout for Exposure Time
         exposure_time_layout = QtWidgets.QHBoxLayout()
@@ -279,40 +288,34 @@ class CameraPreviewWindow(QtWidgets.QWidget):
     def live_preview(self):
         if not self.camera_thread.isRunning():
             self.camera_thread.start()
+            # Disable the start button as the preview has started
+            self.start_button.setEnabled(False)
+            # Optionally enable the stop button here if it's meant to be used to stop the preview
+            self.stop_button.setEnabled(True)
         else:
+            # Optionally, provide user feedback that the preview is already running
             print("Camera thread is already running.")
+            # Since the preview is already running, ensure the start button is disabled
+            self.start_button.setEnabled(False)
+            # Ensure the stop button is enabled so the user can stop the preview
+            self.stop_button.setEnabled(True)
 
     @QtCore.pyqtSlot()
     def stop_preview(self):
         if self.camera_thread.isRunning():
             self.camera_thread.stop()  # Stop the camera thread
             self.camera_thread.wait()  # Wait for the thread to fully stop
+        
+            # Re-enable the start button as the preview has stopped
+            self.start_button.setEnabled(True)
+
+            # Optionally disable the stop button as there is no preview to stop
+            self.stop_button.setEnabled(False)
+
             self.image_label.clear()   # Clear the image label
             print("Camera thread stopped.")
         else:
             print("Camera thread is not running.")
-
-    # def single_capture(self):
-    #     print("Single capture method called")  # Diagnostic print
-
-    #     try:
-    #         pixmap = self.image_label.pixmap()
-    #         if pixmap and not pixmap.isNull():
-    #             print("Pixmap is valid")  # Diagnostic print
-
-    #             # Hard-coded path for testing
-    #             file_path = Path("C:/Users/Yesenia/Desktop/Pics/test_image.jpg")
-    #             print(f"Attempting to save image at: {file_path}")
-
-    #             success = pixmap.save(str(file_path), 'JPG')
-    #             if success:
-    #                 print(f"Image successfully saved as {file_path}")
-    #             else:
-    #                 print("Failed to save the image.")
-    #         else:
-    #             print("No image available for capture or QPixmap is invalid")
-    #     except Exception as e:
-    #         print(f"An error occurred: {e}")
 
     def single_capture(self):
         print("Single capture method called")
@@ -351,6 +354,13 @@ class CameraPreviewWindow(QtWidgets.QWidget):
                 print("No image available for capture or QPixmap is invalid")
         except Exception as e:
             print(f"An error occurred: {e}")
+    
+    def start_recording(self):
+        """
+        Starts recording video from the camera.
+        """
+        # TODO: Implement the actual recording logic here
+        print("Recording started...")
 
     @QtCore.pyqtSlot(float)
     def adjust_exposure(self, value):
