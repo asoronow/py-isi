@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QFileDialog
 from pathlib import Path
 from datetime import datetime
 import os
+from PyQt5.QtCore import QTimer
 CONFIGURATION = {
     'exposure time': 10e-3,
     'delay time': 0,
@@ -65,6 +66,10 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         super(CameraPreviewWindow, self).__init__()
 
         self.save_location = None  # Initialize the save location
+
+        # Add a timer for continuous capture
+        self.capture_timer = QTimer(self)
+        self.capture_timer.timeout.connect(self.capture_continuous)
 
         # Set window title and initial size
         self.setWindowTitle("PCO Camera Live Preview")
@@ -365,25 +370,53 @@ class CameraPreviewWindow(QtWidgets.QWidget):
     
     def start_recording(self):
         """
-        Starts video recording.
+        Starts the continuous capture for recording.
         """
-        # TODO: Implement the actual start recording logic here
-        print("Recording started...")
+        # Start the timer to capture images periodically, e.g., every 1000ms (1 second)
+        self.capture_timer.start(1000)
+
+        # Update the button states
         # Disable the Record button while recording is active
         self.record_button.setEnabled(False)
         # Enable the Stop Record button
         self.stop_record_button.setEnabled(True)
+        self.single_capture_button.setEnabled(False)  # Disable the Single Capture button
 
     def stop_recording(self):
         """
-        Stops the video recording.
+        Stops the continuous capture for recording.
         """
-        # TODO: Implement the actual stop recording logic here
-        print("Recording stopped.")
+        # Stop the timer
+        self.capture_timer.stop()
+
+        # Update the button states
         # Re-enable the Record button
         self.record_button.setEnabled(True)
         # Disable the Stop Record button until the next recording starts
         self.stop_record_button.setEnabled(False)
+        self.single_capture_button.setEnabled(True)  # Re-enable the Single Capture button
+
+    def capture_continuous(self):
+        """
+        Captures the current preview image and saves it.
+        """
+        if self.save_location:
+            pixmap = self.image_label.grab()
+            if not pixmap.isNull():
+                now = datetime.now()
+                timestamp = now.strftime("%Y%m%d_%H%M%S")
+                file_name = f"Image_{timestamp}.png"
+                file_path = Path(self.save_location) / file_name
+            
+                if pixmap.save(str(file_path), 'PNG'):
+                    print(f"Image captured and saved as {file_path}")
+                else:
+                    print(f"Failed to save image as {file_path}")
+            else:
+                print("No image available for capture or QPixmap is invalid.")
+        else:
+            print("Save location not set. Cannot capture image.")
+
 
     @QtCore.pyqtSlot(float)
     def adjust_exposure(self, value):
