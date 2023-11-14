@@ -4,6 +4,7 @@ import numpy as np
 from PyQt5 import QtGui, QtWidgets, QtCore
 from PyQt5.QtWidgets import QFileDialog
 from pathlib import Path
+import os
 CONFIGURATION = {
     'exposure time': 10e-3,
     'delay time': 0,
@@ -315,6 +316,7 @@ class CameraPreviewWindow(QtWidgets.QWidget):
 
     def single_capture(self):
         print("Single capture method called")
+
         try:
             # Use grab() to capture the QLabel content
             pixmap = self.image_label.grab()
@@ -322,19 +324,23 @@ class CameraPreviewWindow(QtWidgets.QWidget):
             if not pixmap.isNull():
                 print("Pixmap is valid")
 
-                # Open a save file dialog
+                # Open a save file dialog at the user's home directory
+                home_dir = str(Path.home())
                 file_path, _ = QFileDialog.getSaveFileName(self, "Save Image",
-                                                       "", "Images (*.png *.jpg *.jpeg)")
+                                                       home_dir, "Images (*.png *.jpg *.jpeg)")
+
                 if file_path:
+                    # Convert the string file path to a Path object
+                    file_path = Path(file_path)
+
                     # Confirm the file path
                     print(f"File path chosen: {file_path}")
 
                     # Determine the output format based on the file extension
-                    output_format = 'PNG' if file_path.lower().endswith('.png') else 'JPEG'
-                    jpg_quality = 95  # Adjust this as necessary
+                    output_format = 'PNG' if file_path.suffix.lower() == '.png' else 'JPEG'
 
-                    # Attempt to save the image
-                    success = pixmap.save(file_path, output_format)
+                    # Attempt to save the image, converting Path object to string
+                    success = pixmap.save(str(file_path), output_format)
                     if success:
                         print(f"Image successfully saved as {file_path}")
                     else:
@@ -342,7 +348,7 @@ class CameraPreviewWindow(QtWidgets.QWidget):
                 else:
                     print("File save operation was canceled.")
             else:
-                print("No image available for capture.")
+                print("No image available for capture or QPixmap is invalid")
         except Exception as e:
             print(f"An error occurred: {e}")
 
