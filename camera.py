@@ -92,6 +92,11 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         self.record_button = QtWidgets.QPushButton("Record", self)
         self.record_button.clicked.connect(self.start_recording)
 
+        # Stop Record Button
+        self.stop_record_button = QtWidgets.QPushButton("Stop Record", self)
+        self.stop_record_button.clicked.connect(self.stop_recording)
+        self.stop_record_button.setEnabled(False)  # Disable the button initially
+
         # Spin box for Exposure Time
         self.spin_box = QtWidgets.QDoubleSpinBox(self)
         self.spin_box.setRange(1, 10000)  # Adjust the range as needed
@@ -172,6 +177,9 @@ class CameraPreviewWindow(QtWidgets.QWidget):
 
         # Add the Record button to the layout
         control_layout.addWidget(self.record_button)
+
+        # Add the Stop Record button to the layout
+        control_layout.addWidget(self.stop_record_button)
 
         # Horizontal layout for Exposure Time
         exposure_time_layout = QtWidgets.QHBoxLayout()
@@ -354,13 +362,28 @@ class CameraPreviewWindow(QtWidgets.QWidget):
                 print("No image available for capture, or no save location set.")
         except Exception as e:
             print(f"An error occurred: {e}")
-
+    
     def start_recording(self):
         """
-        Starts recording video from the camera.
+        Starts video recording.
         """
-        # TODO: Implement the actual recording logic here
+        # TODO: Implement the actual start recording logic here
         print("Recording started...")
+        # Disable the Record button while recording is active
+        self.record_button.setEnabled(False)
+        # Enable the Stop Record button
+        self.stop_record_button.setEnabled(True)
+
+    def stop_recording(self):
+        """
+        Stops the video recording.
+        """
+        # TODO: Implement the actual stop recording logic here
+        print("Recording stopped.")
+        # Re-enable the Record button
+        self.record_button.setEnabled(True)
+        # Disable the Stop Record button until the next recording starts
+        self.stop_record_button.setEnabled(False)
 
     @QtCore.pyqtSlot(float)
     def adjust_exposure(self, value):
