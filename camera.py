@@ -96,10 +96,12 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         # Single Capture Button
         self.single_capture_button = QtWidgets.QPushButton("Single Capture", self)
         self.single_capture_button.clicked.connect(self.single_capture)
+        self.single_capture_button.setEnabled(False)  # Initially disable the button
 
         # Record Button
         self.record_button = QtWidgets.QPushButton("Record", self)
         self.record_button.clicked.connect(self.start_recording)
+        self.record_button.setEnabled(False)  # Initially disable the button
 
         # Stop Record Button
         self.stop_record_button = QtWidgets.QPushButton("Stop Record", self)
@@ -224,6 +226,7 @@ class CameraPreviewWindow(QtWidgets.QWidget):
 
         self.setLayout(main_layout)
         self.save_location = None  # Initialize the save location
+        self.current_recording_path = None
         self.camera_thread = CameraThread()
         self.camera_thread.image_signal.connect(self.update_image)
 
@@ -314,9 +317,15 @@ class CameraPreviewWindow(QtWidgets.QWidget):
             self.camera_thread.start()
             self.start_button.setEnabled(False)
             self.stop_button.setEnabled(True)
+
+            # Enable the Single Capture and Record buttons
+            self.single_capture_button.setEnabled(True)
+            self.record_button.setEnabled(True)
+
             print("Live preview started.")
         else:
             print("Live preview is already running.")
+
 
 
     def select_save_path(self):
@@ -350,7 +359,6 @@ class CameraPreviewWindow(QtWidgets.QWidget):
 
     def single_capture(self):
         print("Single capture method called")
-
         try:
             pixmap = self.image_label.grab()
         
@@ -377,42 +385,43 @@ class CameraPreviewWindow(QtWidgets.QWidget):
             print(f"An error occurred: {e}")
     
     def start_recording(self):
-        if self.save_location:  # Check if the save location is set
-            self.capture_timer.start(1000)
+        if self.save_location:  
+            now = datetime.now()
+            folder_name = now.strftime("Recording_%Y%m%d_%H%M%S")
+            self.current_recording_path = Path(self.save_location) / folder_name
+            self.current_recording_path.mkdir(parents=True, exist_ok=True)  
+
+            self.capture_timer.start(1000)  
             self.record_button.setEnabled(False)
             self.stop_record_button.setEnabled(True)
             self.single_capture_button.setEnabled(False)
-            print("Recording started...")
+            self.stop_button.setEnabled(False)  # Disable the Stop Preview button
+            print(f"Recording started in {self.current_recording_path}")
         else:
             print("Please set a save location before starting the recording.")
-
 
     def stop_recording(self):
         """
         Stops the continuous capture for recording.
         """
-        # Stop the timer
-        self.capture_timer.stop()
-
-        # Update the button states
-        # Re-enable the Record button
+        self.capture_timer.stop()  
         self.record_button.setEnabled(True)
-        # Disable the Stop Record button until the next recording starts
         self.stop_record_button.setEnabled(False)
-        self.single_capture_button.setEnabled(True)  # Re-enable the Single Capture button
+        self.single_capture_button.setEnabled(True)
+        self.stop_button.setEnabled(True)  # Re-enable the Stop Preview button
+        print("Recording stopped.")
 
     def capture_continuous(self):
         """
-        Captures the current preview image and saves it.
+        Captures the current preview image and saves it in the current recording folder.
         """
-        if self.save_location:
+        if self.current_recording_path:
             pixmap = self.image_label.grab()
             if not pixmap.isNull():
-                now = datetime.now()
-                timestamp = now.strftime("%Y%m%d_%H%M%S")
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 file_name = f"Image_{timestamp}.png"
-                file_path = Path(self.save_location) / file_name
-            
+                file_path = self.current_recording_path / file_name
+
                 if pixmap.save(str(file_path), 'PNG'):
                     print(f"Image captured and saved as {file_path}")
                 else:
@@ -420,8 +429,7 @@ class CameraPreviewWindow(QtWidgets.QWidget):
             else:
                 print("No image available for capture or QPixmap is invalid.")
         else:
-            print("Save location not set. Cannot capture image.")
-
+            print("Recording folder not set. Cannot capture image.")
 
     @QtCore.pyqtSlot(float)
     def adjust_exposure(self, value):
