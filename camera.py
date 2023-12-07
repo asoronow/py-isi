@@ -79,6 +79,10 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         self.image_label.setFixedSize(1024, 700)
         self.image_label.setAlignment(QtCore.Qt.AlignCenter)  # Center the image in QLabel
 
+        # Select Save Path Button
+        self.select_save_path_button = QtWidgets.QPushButton("Select Save Path", self)
+        self.select_save_path_button.clicked.connect(self.select_save_path)
+
         # Start Preview Button
         self.start_button = QtWidgets.QPushButton("Start Preview", self)
         self.start_button.clicked.connect(self.live_preview)
@@ -170,6 +174,9 @@ class CameraPreviewWindow(QtWidgets.QWidget):
 
         # Right-side layout for controls
         control_layout = QtWidgets.QVBoxLayout()
+
+        # Add the Select Save Path button to the layout
+        control_layout.addWidget(self.select_save_path_button)
         
         # Add the start button to the layout
         control_layout.addWidget(self.start_button)
@@ -216,6 +223,7 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         main_layout.addLayout(control_layout)
 
         self.setLayout(main_layout)
+        self.save_location = None  # Initialize the save location
         self.camera_thread = CameraThread()
         self.camera_thread.image_signal.connect(self.update_image)
 
@@ -303,25 +311,25 @@ class CameraPreviewWindow(QtWidgets.QWidget):
     @QtCore.pyqtSlot()
     def live_preview(self):
         if not self.camera_thread.isRunning():
-            # Prompt the user to select a save location when the preview starts
-            self.save_location = QFileDialog.getExistingDirectory(self, "Select Save Location", str(Path.home()))
-            # Check if a directory was selected
-            if self.save_location:
-                self.camera_thread.start()
-                # Disable the start button as the preview has started
-                self.start_button.setEnabled(False)
-                # Optionally enable the stop button here if it's meant to be used to stop the preview
-                self.stop_button.setEnabled(True)
-            else:
-                print("No save location was selected. The live preview will not start.")
-        else:
-             # Optionally, provide user feedback that the preview is already running
-            print("Camera thread is already running.")
-            # Since the preview is already running, ensure the start button is disabled
+            self.camera_thread.start()
             self.start_button.setEnabled(False)
-            # Ensure the stop button is enabled so the user can stop the preview
             self.stop_button.setEnabled(True)
+            print("Live preview started.")
+        else:
+            print("Live preview is already running.")
 
+
+    def select_save_path(self):
+        """
+        Opens a dialog for the user to select a directory where images will be saved.
+        """
+        selected_directory = QFileDialog.getExistingDirectory(self, "Select Directory", str(Path.home()))
+
+        if selected_directory:
+            self.save_location = selected_directory
+            print(f"Save path selected: {self.save_location}")
+        else:
+            print("No directory was selected.")
 
     @QtCore.pyqtSlot()
     def stop_preview(self):
@@ -369,18 +377,15 @@ class CameraPreviewWindow(QtWidgets.QWidget):
             print(f"An error occurred: {e}")
     
     def start_recording(self):
-        """
-        Starts the continuous capture for recording.
-        """
-        # Start the timer to capture images periodically, e.g., every 1000ms (1 second)
-        self.capture_timer.start(1000)
+        if self.save_location:  # Check if the save location is set
+            self.capture_timer.start(1000)
+            self.record_button.setEnabled(False)
+            self.stop_record_button.setEnabled(True)
+            self.single_capture_button.setEnabled(False)
+            print("Recording started...")
+        else:
+            print("Please set a save location before starting the recording.")
 
-        # Update the button states
-        # Disable the Record button while recording is active
-        self.record_button.setEnabled(False)
-        # Enable the Stop Record button
-        self.stop_record_button.setEnabled(True)
-        self.single_capture_button.setEnabled(False)  # Disable the Single Capture button
 
     def stop_recording(self):
         """
