@@ -3,6 +3,7 @@ import pco
 import numpy as np
 from PyQt5 import QtGui, QtWidgets, QtCore
 from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QMessageBox
 from pathlib import Path
 from datetime import datetime
 import os
@@ -358,47 +359,44 @@ class CameraPreviewWindow(QtWidgets.QWidget):
             print("Camera thread is not running.")
 
     def single_capture(self):
-        print("Single capture method called")
+        if not self.save_location:
+            QMessageBox.warning(self, "No Save Path", "Please select a save path before capturing an image.")
+            return
+
         try:
             pixmap = self.image_label.grab()
-        
-            if not pixmap.isNull() and self.save_location:
-                print("Pixmap is valid")
-
-                # Get the current date and time for the timestamp
+            if not pixmap.isNull():
                 now = datetime.now()
                 timestamp = now.strftime("%Y%m%d_%H%M%S")
-
-                # Create the full file path with the timestamp
                 file_name = f"Image_{timestamp}.png"
                 file_path = Path(self.save_location) / file_name
 
-                # Attempt to save the image
-                success = pixmap.save(str(file_path), 'PNG')
-                if success:
-                    print(f"Image successfully saved as {file_path}")
+                if pixmap.save(str(file_path), 'PNG'):
+                    print(f"Image captured and saved as {file_path}")
                 else:
                     print("Failed to save the image.")
             else:
-                print("No image available for capture, or no save location set.")
+                print("No image available for capture.")
         except Exception as e:
             print(f"An error occurred: {e}")
-    
-    def start_recording(self):
-        if self.save_location:  
-            now = datetime.now()
-            folder_name = now.strftime("Recording_%Y%m%d_%H%M%S")
-            self.current_recording_path = Path(self.save_location) / folder_name
-            self.current_recording_path.mkdir(parents=True, exist_ok=True)  
 
-            self.capture_timer.start(1000)  
-            self.record_button.setEnabled(False)
-            self.stop_record_button.setEnabled(True)
-            self.single_capture_button.setEnabled(False)
-            self.stop_button.setEnabled(False)  # Disable the Stop Preview button
-            print(f"Recording started in {self.current_recording_path}")
-        else:
-            print("Please set a save location before starting the recording.")
+    def start_recording(self):
+        if not self.save_location:  
+            QMessageBox.warning(self, "No Save Path", "Please select a save path before starting the recording.")
+            return
+
+        now = datetime.now()
+        folder_name = now.strftime("Recording_%Y%m%d_%H%M%S")
+        self.current_recording_path = Path(self.save_location) / folder_name
+        self.current_recording_path.mkdir(parents=True, exist_ok=True)
+
+        self.capture_timer.start(1000)
+        self.record_button.setEnabled(False)
+        self.stop_record_button.setEnabled(True)
+        self.single_capture_button.setEnabled(False)
+        self.stop_button.setEnabled(False)  # Disable the Stop Preview button
+        print(f"Recording started in {self.current_recording_path}")
+
 
     def stop_recording(self):
         """
