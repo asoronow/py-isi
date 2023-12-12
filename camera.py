@@ -53,6 +53,42 @@ class CameraThread(QtCore.QThread):
                     
                 # Emit the processed image
                 self.image_signal.emit(image)
+
+    def start_fifo_recording(self):
+        # First, ensure that the regular run loop is not controlling the camera
+        self.stop()  # This should set self.running to False
+        self.wait()  # Wait for the run loop to finish if it's currently running
+
+        # Now we can start the FIFO recording
+        self.fifo_recording = True  # Indicate that we're in FIFO recording mode
+        camera = pco.Camera()
+        with camera as cam:
+            # Adjust configuration for FIFO recording
+            cam.configuration = {
+                "exposure time": self.exposure_time,
+                "delay time": self.delay_time,
+                "roi": self.roi,
+            }
+
+            # Start the recording in FIFO mode
+            cam.record(mode="fifo")
+            while self.fifo_recording:
+                image, meta = cam.image()  # This method will be specific to your camera's API
+
+                # Process the image as needed
+                if image.dtype == np.uint16:
+                    image = (image / 256).astype(np.uint8)
+            
+                # Emit the processed image
+                self.image_signal.emit(image)
+
+            # Cleanup or finalization code after recording stops
+            cam.stop()  # Stop the camera recording, specific to your camera's API
+
+    def stop_fifo_recording(self):
+        self.fifo_recording = False
+        self.running = False  # This will stop the FIFO recording loop
+
     def stop(self):
         self.running = False  # Set the flag to False to stop the loop
 
@@ -67,6 +103,7 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         super(CameraPreviewWindow, self).__init__()
 
         self.save_location = None  # Initialize the save location
+        self.fifo_recording = False
 
         # Add a timer for continuous capture
         self.capture_timer = QTimer(self)
@@ -390,19 +427,27 @@ class CameraPreviewWindow(QtWidgets.QWidget):
         self.current_recording_path = Path(self.save_location) / folder_name
         self.current_recording_path.mkdir(parents=True, exist_ok=True)
 
-        self.capture_timer.start(1000)
+        # Start the FIFO recording in the camera thread
+        self.camera_thread.start_fifo_recording()
+
+        # Update the button states
         self.record_button.setEnabled(False)
         self.stop_record_button.setEnabled(True)
         self.single_capture_button.setEnabled(False)
         self.stop_button.setEnabled(False)  # Disable the Stop Preview button
         print(f"Recording started in {self.current_recording_path}")
 
+    def stop_fifo_recording(self):
+        self.running = False  # Set the flag to False to stop the FIFO recording loop
 
     def stop_recording(self):
         """
-        Stops the continuous capture for recording.
+        Stops the FIFO recording.
         """
-        self.capture_timer.stop()  
+        # Stop the FIFO recording in the camera thread
+        self.camera_thread.stop_fifo_recording()
+
+        # Update the button states
         self.record_button.setEnabled(True)
         self.stop_record_button.setEnabled(False)
         self.single_capture_button.setEnabled(True)
